@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:13.0-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:${SEVICE_PORT}"
+    volumes:
+      - .:/app
+      - ~/.data/static:/home/user/web/staticfiles/
+      - ~/.data/media:/home/user/web/media/
+    ports:
+      - "${SEVICE_PORT}:${SEVICE_PORT}"
+    restart: always
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+      - redis
+
+  redis:
+    image: redis:latest
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
